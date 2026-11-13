@@ -115,9 +115,9 @@ Set `API_URL` near the bottom of `frontend/app.html` to `http://localhost:8000` 
 
 Environment variables: `MODEL_PATH`, `ABSTAIN_BELOW` (default 0.65), `ALLOWED_ORIGINS`, `MAX_UPLOAD_MB`, `LOW_MEM=1` (bfloat16 CLIP for memory-limited hosts).
 
-## Data and licensing
+## Data
 
-The DFDC sample is used under the Kaggle competition rules and Meta's dataset terms; the data is not redistributed here. Treat the project as non-commercial research. Code is MIT licensed. CLIP weights are from OpenAI (`openai/clip-vit-base-patch16`); YuNet is from OpenCV Zoo (MIT).
+The DFDC sample is used under the Kaggle competition rules and Meta's dataset terms; the data is not redistributed here. Treat the project as non-commercial research.CLIP weights are from OpenAI (`openai/clip-vit-base-patch16`); YuNet is from OpenCV Zoo (MIT).
 
 ## Notes
 
