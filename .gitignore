@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pt
+feats/
+*.onnx
+*.mp4
+*.mov
+manifest.csv
+*.zip
+.DS_Store

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 330" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#55534E"/>
+    </marker>
+  </defs>
+  <rect width="920" height="330" fill="#FBFAF7"/>
+
+  <g font-size="12" fill="#85827B" letter-spacing="1">
+    <text x="30" y="30">INFERENCE</text>
+    <text x="30" y="196">EXPERIMENT</text>
+  </g>
+
+  <g fill="#FFFFFF" stroke="#1B1B1A" stroke-width="1.2">
+    <rect x="30"  y="46" width="125" height="86" rx="4"/>
+    <rect x="185" y="46" width="135" height="86" rx="4"/>
+    <rect x="350" y="46" width="135" height="86" rx="4"/>
+    <rect x="515" y="46" width="125" height="86" rx="4"/>
+    <rect x="670" y="46" width="135" height="86" rx="4"/>
+    <rect x="835" y="46" width="60"  height="86" rx="4" stroke="#1F4E79"/>
+  </g>
+  <g font-size="14" font-weight="600" fill="#1B1B1A" text-anchor="middle">
+    <text x="92"  y="82">Video</text>
+    <text x="252" y="82">Face crops</text>
+    <text x="417" y="82">CLIP ViT-B/16</text>
+    <text x="577" y="82">Pooling</text>
+    <text x="737" y="82">Ensemble</text>
+    <text x="865" y="82" fill="#1F4E79">Verdict</text>
+  </g>
+  <g font-size="12" fill="#55534E" text-anchor="middle">
+    <text x="92"  y="102">any length</text>
+    <text x="252" y="102">YuNet, 16 frames</text>
+    <text x="417" y="102">frozen, 768-d</text>
+    <text x="577" y="102">mean + std, 1536-d</text>
+    <text x="737" y="102">5 logistic regressions</text>
+    <text x="737" y="118">+ temperature scaling</text>
+    <text x="865" y="102">or</text>
+    <text x="865" y="118">"not sure"</text>
+  </g>
+  <g stroke="#55534E" stroke-width="1.4" marker-end="url(#a)">
+    <line x1="155" y1="89" x2="183" y2="89"/>
+    <line x1="320" y1="89" x2="348" y2="89"/>
+    <line x1="485" y1="89" x2="513" y2="89"/>
+    <line x1="640" y1="89" x2="668" y2="89"/>
+    <line x1="805" y1="89" x2="833" y2="89"/>
+  </g>
+
+  <g fill="#FFFFFF" stroke="#1B1B1A" stroke-width="1.2">
+    <rect x="30"  y="212" width="190" height="86" rx="4"/>
+    <rect x="260" y="212" width="190" height="86" rx="4"/>
+    <rect x="490" y="212" width="190" height="86" rx="4"/>
+    <rect x="720" y="212" width="170" height="86" rx="4"/>
+  </g>
+  <g font-size="14" font-weight="600" fill="#1B1B1A" text-anchor="middle">
+    <text x="125" y="248">Re-encode (ffmpeg)</text>
+    <text x="355" y="248">Features per level</text>
+    <text x="585" y="248">Two training regimes</text>
+    <text x="805" y="248">Grouped CV</text>
+  </g>
+  <g font-size="12" fill="#55534E" text-anchor="middle">
+    <text x="125" y="268">CRF 28, 35, 42</text>
+    <text x="125" y="284">480p + CRF 32</text>
+    <text x="355" y="268">same 391 videos,</text>
+    <text x="355" y="284">5 quality levels</text>
+    <text x="585" y="268">clean only vs.</text>
+    <text x="585" y="284">clean + compressed</text>
+    <text x="805" y="268">5 folds x 5 repeats,</text>
+    <text x="805" y="284">split by source video</text>
+  </g>
+  <g stroke="#55534E" stroke-width="1.4" marker-end="url(#a)">
+    <line x1="220" y1="255" x2="258" y2="255"/>
+    <line x1="450" y1="255" x2="488" y2="255"/>
+    <line x1="680" y1="255" x2="718" y2="255"/>
+  </g>
+</svg>

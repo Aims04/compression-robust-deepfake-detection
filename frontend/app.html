@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Compression-Robust Deepfake Detection</title>
+<meta name="description" content="Measuring how video compression degrades a deepfake detector, and whether compression-aware training and abstention help.">
+<style>
+:root {
+  --bg: #FBFAF7;
+  --surface: #FFFFFF;
+  --text: #1B1B1A;
+  --text-2: #55534E;
+  --text-3: #85827B;
+  --line: #E2DFD7;
+  --link: #1F4E79;
+  --fake: #A8321F;
+  --real: #2C6E49;
+  --warn: #8A6100;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 400 17px/1.65 var(--serif);
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+.wrap { max-width: 680px; margin: 0 auto; padding: 56px 20px 72px; }
+
+h1 { font: 700 34px/1.2 var(--serif); margin: 0 0 6px; }
+.kicker { font: 400 15px var(--sans); color: var(--text-3); margin: 0 0 28px; }
+h2 { font: 700 22px/1.3 var(--serif); margin: 52px 0 12px; }
+p { margin: 0 0 16px; }
+a { color: var(--link); }
+.sans { font-family: var(--sans); }
+
+.tool { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 20px; font-family: var(--sans); font-size: 15px; }
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.tabs button {
+  background: none; border: 0; padding: 0 0 10px; margin-bottom: -1px; cursor: pointer;
+  font: 500 15px var(--sans); color: var(--text-3); border-bottom: 2px solid transparent;
+}
+.tabs button.on { color: var(--text); border-bottom-color: var(--text); }
+
+.drop {
+  border: 1px dashed #B9B5AA; border-radius: 4px; padding: 30px 16px; text-align: center;
+  cursor: pointer; color: var(--text-2); background: var(--bg);
+}
+.drop:hover, .drop.over { border-color: var(--link); background: #F1F5F9; }
+.drop b { display: block; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.drop span { font-size: 13px; color: var(--text-3); }
+.chip {
+  display: none; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg);
+}
+.chip.on { display: flex; }
+.chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip button { background: none; border: 0; color: var(--link); cursor: pointer; font: 14px var(--sans); }
+.link-in { display: none; }
+.link-in.on { display: block; }
+.link-in input {
+  width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 4px;
+  font: 15px var(--sans); background: var(--bg); color: var(--text);
+}
+.link-in p { font-size: 13px; color: var(--text-3); margin: 8px 0 0; }
+:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+.go {
+  margin-top: 16px; padding: 10px 22px; border: 1px solid var(--text); border-radius: 4px;
+  background: var(--text); color: #fff; font: 600 15px var(--sans); cursor: pointer;
+}
+.go:hover:not(:disabled) { background: #000; }
+.go:disabled { background: #EAE7DF; border-color: #EAE7DF; color: var(--text-3); cursor: not-allowed; }
+.status { display: none; margin-top: 14px; font-size: 14px; color: var(--text-2); }
+.status.on { display: block; }
+
+.result { display: none; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+.result.on { display: block; }
+.v-label { font: 600 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.v-big { font: 400 56px/1.1 var(--serif); margin: 4px 0 10px; }
+.v-big.fake { color: var(--fake); } .v-big.real { color: var(--real); } .v-big.unsure { color: var(--warn); }
+.badge { font-size: 14px; color: var(--text-2); }
+.sub-h { font: 600 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin: 22px 0 10px; }
+.frames { display: flex; gap: 3px; height: 60px; }
+.frames div { flex: 1; display: flex; flex-direction: column; }
+.frames .up, .frames .dn { height: 50%; display: flex; }
+.frames .up { align-items: flex-end; } .frames .dn { align-items: flex-start; }
+.frames i { width: 100%; display: block; }
+.note { font-size: 14px; color: var(--text-2); border-left: 3px solid var(--line); padding: 2px 0 2px 12px; margin-top: 12px; }
+.note.err { color: var(--fake); border-left-color: var(--fake); }
+.small { font: 13px/1.5 var(--sans); color: var(--text-3); margin-top: 8px; }
+
+table { width: 100%; border-collapse: collapse; font: 15px var(--sans); margin: 8px 0 6px; }
+th, td { text-align: right; padding: 9px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+th { font-weight: 600; color: var(--text-2); border-bottom: 1.5px solid var(--text); }
+td.gain { color: var(--link); font-weight: 600; }
+caption { text-align: left; font: 13px var(--sans); color: var(--text-3); padding: 0 0 8px; caption-side: bottom; margin-top: 8px; }
+
+.chart-wrap { margin: 24px 0 4px; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap; font: 14px var(--sans); color: var(--text-2); margin-bottom: 6px; }
+.legend span::before { content: ''; display: inline-block; width: 18px; height: 3px; margin-right: 8px; vertical-align: middle; background: var(--c); }
+#chart { width: 100%; height: auto; display: block; }
+#chart text { fill: var(--text-3); font: 12px var(--sans); }
+
+ol, ul { padding-left: 22px; margin: 0 0 16px; }
+li { margin-bottom: 10px; }
+li strong { font-weight: 700; }
+
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font: 13px/1.5 var(--sans); color: var(--text-3); }
+@media (max-width: 520px) { h1 { font-size: 28px; } .v-big { font-size: 46px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Compression-Robust Deepfake Detection</h1>
+  <p class="kicker">Research project &middot; DFDC sample, 391 videos</p>
+
+  <p>Video shared online is re-encoded and downscaled, which removes the fine traces many deepfake detectors depend on. This project measures how much detection accuracy is lost to compression, tests whether training on compressed copies recovers it, and studies whether the detector can abstain when it cannot tell, instead of guessing.</p>
+
+  <h2>Try the detector</h2>
+  <div class="tool">
+    <div class="tabs" role="tablist">
+      <button class="on" data-tab="upload" role="tab">Upload video</button>
+      <button data-tab="url" role="tab">YouTube link</button>
+    </div>
+
+    <div id="uploadPane">
+      <div class="drop" id="drop" tabindex="0">
+        <b>Drop a video here, or click to choose</b>
+        <span>MP4 or MOV, up to 100 MB. One clearly visible face.</span>
+      </div>
+      <input type="file" id="file" accept="video/*" hidden>
+      <div class="chip" id="chip"><span id="fname"></span><button id="clear">Remove</button></div>
+    </div>
+
+    <div class="link-in" id="urlPane">
+      <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=">
+      <p>YouTube only. Other platforms block downloads.</p>
+    </div>
+
+    <button class="go" id="go" disabled>Analyze</button>
+    <div class="status" id="status"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <h2>Results</h2>
+  <p>The same videos were re-encoded at increasing compression and scored by two detectors: one trained on clean video only, and one trained on clean plus compressed copies. A detector trained only on clean video falls toward chance under heavy compression; compression-aware training recovers much of the loss without hurting clean accuracy.</p>
+
+  <table>
+    <thead>
+      <tr><th>Test condition</th><th>Clean-trained</th><th>Compression-trained</th><th>Gain</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Original</td><td>0.864</td><td>0.865</td><td class="gain">+0.001</td></tr>
+      <tr><td>CRF 28</td><td>0.841</td><td>0.864</td><td class="gain">+0.023</td></tr>
+      <tr><td>CRF 35</td><td>0.800</td><td>0.848</td><td class="gain">+0.048</td></tr>
+      <tr><td>480p + CRF 32</td><td>0.716</td><td>0.790</td><td class="gain">+0.074</td></tr>
+      <tr><td>CRF 42</td><td>0.666</td><td>0.763</td><td class="gain">+0.097</td></tr>
+    </tbody>
+    <caption>AUC, mean over 5-fold cross-validation grouped by source video, 5 repeats. Standard deviations are 0.04&ndash;0.09, so several differences are within one standard deviation. Compression simulated with ffmpeg (libx264).</caption>
+  </table>
+
+  <div class="chart-wrap">
+    <div class="legend"><span style="--c:#A8321F">Trained on clean video</span><span style="--c:#1F4E79">Trained with compression</span></div>
+    <svg id="chart" viewBox="0 0 640 300" role="img" aria-label="AUC against compression level for two training setups"></svg>
+  </div>
+
+  <h2>Method</h2>
+  <ol>
+    <li><strong>Faces.</strong> A face detector (YuNet) finds the largest face in 16 evenly spaced frames and crops it.</li>
+    <li><strong>Features.</strong> A frozen CLIP ViT-B/16 vision model embeds each crop. Embeddings are pooled over frames as mean and standard deviation.</li>
+    <li><strong>Classifier.</strong> Five logistic regressions trained on bootstrap samples of the training videos vote. Their output is calibrated with temperature scaling.</li>
+    <li><strong>Abstention.</strong> If calibrated confidence is below 65%, the answer is &ldquo;not sure&rdquo;. On clean video this raises balanced accuracy from 0.76 to 0.83 when the model answers only its 50% most confident cases.</li>
+  </ol>
+
+  <h2>Scope and next steps</h2>
+  <ul>
+    <li><strong>Sample size.</strong> The study uses 391 DFDC videos (77 real), so the results describe trends with wide intervals. Adding real footage is the first extension.</li>
+    <li><strong>Single dataset.</strong> Models are trained and tested within DFDC. The next experiment is cross-dataset evaluation on Celeb-DF and FaceForensics++, and on newer generators.</li>
+    <li><strong>Simulated compression.</strong> Re-encoding uses ffmpeg settings, not downloads from real platforms. Comparing against platform re-encodes would test how well the simulation transfers.</li>
+    <li><strong>Use.</strong> Outputs are model estimates for research, not forensic evidence.</li>
+  </ul>
+
+  <footer>
+    Uploaded videos are processed temporarily and deleted after analysis. The first request after a period of inactivity can take about a minute.
+  </footer>
+</div>
+
+<script>
+const API_URL = '';
+const api = (new URLSearchParams(location.search).get('api') || API_URL).replace(/\/$/, '');
+const $ = (s) => document.querySelector(s);
+
+let tab = 'upload', file = null;
+
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  tab = b.dataset.tab;
+  $('#uploadPane').style.display = tab === 'upload' ? '' : 'none';
+  $('#urlPane').classList.toggle('on', tab === 'url');
+  refresh();
+}));
+
+const drop = $('#drop'), input = $('#file');
+drop.addEventListener('click', () => input.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') input.click(); });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('over');
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+});
+input.addEventListener('change', () => input.files.length && setFile(input.files[0]));
+$('#clear').addEventListener('click', () => setFile(null));
+$('#url').addEventListener('input', refresh);
+
+function setFile(f) {
+  file = f;
+  $('#fname').textContent = f ? f.name : '';
+  $('#chip').classList.toggle('on', !!f);
+  drop.style.display = f ? 'none' : '';
+  if (!f) input.value = '';
+  refresh();
+}
+function refresh() {
+  $('#go').disabled = tab === 'upload' ? !file : !$('#url').value.trim();
+}
+
+const esc = (s) => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+
+$('#go').addEventListener('click', async () => {
+  const go = $('#go'), status = $('#status'), out = $('#result');
+  go.disabled = true; go.textContent = 'Analyzing…';
+  out.classList.remove('on');
+  status.classList.add('on');
+  status.textContent = 'Uploading and analyzing…';
+  const wake = setTimeout(() => {
+    status.textContent = 'Still working. The server may be starting up, which can take up to a minute.';
+  }, 8000);
+
+  if (!api) {
+    clearTimeout(wake); status.classList.remove('on');
+    fail('No backend is connected to this page.');
+    return done();
+  }
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 240000);
+  try {
+    const form = new FormData();
+    if (tab === 'upload') form.append('file', file); else form.append('url', $('#url').value.trim());
+    const res = await fetch(api + '/predict', { method: 'POST', body: form, signal: ctrl.signal });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) show(data); else fail(data.detail || 'The server returned an error.');
+  } catch (e) {
+    fail('The server did not respond. It may be waking up or restarting. Try again in a minute.');
+  }
+  clearTimeout(timer); clearTimeout(wake);
+  status.classList.remove('on');
+  done();
+});
+
+function done() { $('#go').textContent = 'Analyze'; refresh(); }
+function fail(msg) {
+  const out = $('#result');
+  out.innerHTML = `<div class="note err">${esc(msg)}</div>`;
+  out.classList.add('on');
+}
+
+function show(d) {
+  const p = Math.round(d.fake_probability * 100);
+  const map = {
+    likely_fake: ['Likely AI-generated', p + '%', 'fake'],
+    likely_real: ['Likely authentic', (100 - p) + '%', 'real'],
+    uncertain: ['Not sure', '?', 'unsure'],
+  };
+  const [label, big, cls] = map[d.verdict] || map.uncertain;
+  const conf = Math.round((d.confidence || 0) * 100);
+  const badge = d.abstained
+    ? `Too close to call. Model estimate: ${p}% fake.`
+    : `Confidence ${conf}%. Member disagreement ${(d.member_disagreement || 0).toFixed(2)}.`;
+
+  const infl = Array.isArray(d.frame_influence) ? d.frame_influence : [];
+  const max = Math.max(1e-4, ...infl.map(Math.abs));
+  const bars = infl.map(v => {
+    const h = Math.max(3, Math.round(Math.abs(v) / max * 100));
+    const c = v >= 0 ? 'var(--fake)' : 'var(--real)';
+    return `<div><span class="up">${v >= 0 ? `<i style="height:${h}%;background:${c}"></i>` : ''}</span><span class="dn">${v < 0 ? `<i style="height:${h}%;background:${c}"></i>` : ''}</span></div>`;
+  }).join('');
+
+  let notes = (d.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join('');
+  if (d.model_info) {
+    notes += `<div class="note">${esc(d.model_info.backbone)} features, ${esc(d.model_info.detector)} face detector. ${esc(d.model_info.training_note || '')}</div>`;
+  }
+
+  $('#result').innerHTML = `
+    <div class="v-label">${label}</div>
+    <div class="v-big ${cls}">${big}</div>
+    <div class="badge">${badge}</div>
+    ${infl.length ? `<div class="sub-h">Frame influence</div>
+      <div class="frames" role="img" aria-label="Per-frame influence on the verdict">${bars}</div>
+      <div class="small">One bar per sampled frame. Red pushed toward fake, green toward real. It shows which frames mattered, not where an artifact sits within a frame.</div>` : ''}
+    ${notes}`;
+  $('#result').classList.add('on');
+}
+
+(function chart() {
+  const labels = ['original', 'CRF 28', 'CRF 35', '480p+CRF 32', 'CRF 42'];
+  const clean = [0.864, 0.841, 0.800, 0.716, 0.666];
+  const aug = [0.865, 0.864, 0.848, 0.790, 0.763];
+  const W = 640, H = 300, L = 44, R = 28, T = 16, B = 38;
+  const lo = 0.6, hi = 0.9;
+  const x = i => L + i * (W - L - R) / (labels.length - 1);
+  const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  let s = '';
+  [0.6, 0.7, 0.8, 0.9].forEach(t => {
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="#E2DFD7"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${t.toFixed(1)}</text>`;
+  });
+  s += `<text x="12" y="${T + 4}" transform="rotate(-90 12 ${(T + H - B) / 2 + 40})" text-anchor="middle">AUC</text>`;
+  labels.forEach((l, i) => { s += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle">${l}</text>`; });
+  const line = (arr, c) => {
+    const pts = arr.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/>` +
+      arr.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="3.6" fill="${c}"/>`).join('');
+  };
+  s += line(clean, '#A8321F') + line(aug, '#1F4E79');
+  s += `<text x="${x(4)}" y="${y(clean[4]) + 20}" text-anchor="end" style="fill:#A8321F">0.67</text>`;
+  s += `<text x="${x(4)}" y="${y(aug[4]) - 12}" text-anchor="end" style="fill:#1F4E79">0.76</text>`;
+  $('#chart').innerHTML = s;
+})();
+</script>
+</body>
+</html>
