@@ -16,6 +16,12 @@ abstention as the way a deployed detector should handle inputs it cannot judge.
 
 Screen recording of the web app analysing DFDC clips. The clips come from the DFDC training sample, so the final model has seen them; they show how the interface behaves, and the held-out evidence is in the results below.
 
+
+
+https://github.com/user-attachments/assets/341f6abb-a570-4376-ad88-253f4875629e
+
+
+
 ## Findings
 
 Evaluation: 391 DFDC videos (77 real, 314 fake), 5-fold cross-validation grouped by
@@ -117,7 +123,7 @@ Environment variables: `MODEL_PATH`, `ABSTAIN_BELOW` (default 0.65), `ALLOWED_OR
 
 ## Data
 
-The DFDC sample is used under the Kaggle competition rules and Meta's dataset terms; the data is not redistributed here. Treat the project as non-commercial research.CLIP weights are from OpenAI (`openai/clip-vit-base-patch16`); YuNet is from OpenCV Zoo (MIT).
+The DFDC sample is used under the Kaggle competition rules and Meta's dataset terms; the data is not redistributed here. Treat the project as non-commercial research. CLIP weights are from OpenAI (`openai/clip-vit-base-patch16`); YuNet is from OpenCV Zoo (MIT).
 
 ## Notes
 
